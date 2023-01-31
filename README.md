@@ -1,5 +1,4 @@
-# WebGL
+# VGGI
+VISUALIZATION OF GRAPHICAL AND GEOMETRIC INFORMATION
 
-Project that accompanies VGGI credit module.
-
-Visit vggi-kpi.blogspot.com for more information
+Practical assignment #3 (Operations on texture coordinates) 
