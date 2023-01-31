@@ -1,15 +1,21 @@
-
-
-// Vertex shader
 const vertexShaderSource = `
 attribute vec3 vertex;
-uniform mat4 ModelViewProjectionMatrix;
-
+attribute vec3 normals;
+uniform mat4 ModelViewProjectionMatrix; // u_worldViewProjection
+uniform mat4 world;
+uniform mat4 worldInverseTranspose;
+uniform vec3 lightWorldPosition;
+varying vec3 v_normal; 
+varying vec3 v_surfaceToLight;
+varying vec3 vertexPos;
 void main() {
-    gl_Position = ModelViewProjectionMatrix * vec4(vertex,1.0);
+    vec4 vertexPos4 = ModelViewProjectionMatrix * vec4(vertex, 1.0);
+    gl_Position = vertexPos4;
+    v_normal = mat3(worldInverseTranspose) * normals;
+    vec3 surfaceWorldPosition = (world * vec4(vertex, 1.0)).xyz;
+    v_surfaceToLight = lightWorldPosition - surfaceWorldPosition;
+    vertexPos = vec3(vertexPos4) / vertexPos4.w;
 }`;
-
-
 // Fragment shader
 const fragmentShaderSource = `
 #ifdef GL_FRAGMENT_PRECISION_HIGH
@@ -18,7 +24,35 @@ const fragmentShaderSource = `
    precision mediump float;
 #endif
 
-uniform vec4 color;
+
+varying vec3 v_normal;
+varying vec3 v_surfaceToLight;
+
+varying vec3 vertexPos;
 void main() {
-    gl_FragColor = color;
+    vec3 AmbientLight   = vec3(0.0,1.0,1.0);
+    vec3 DiffuseLight   = vec3(1.0,1.0,1.0);
+    vec3 SpecularLight  = vec3(1.0,1.0,1.0);
+    vec3 AmbientModel   = vec3(0.1,0.1,0.1);
+    vec3 DiffuseModel   = vec3(0.1,0.1,0.1);
+    vec3 SpecularModel  = vec3(0.1,0.1,0.1);
+    vec3 normal = normalize(v_normal); 
+    vec3 Light = normalize(v_surfaceToLight);
+
+
+    float LightPoint = max(dot(normal, Light), 0.0); 
+    float shininess = 5.0;
+    float specular = 0.0;
+    if(LightPoint > 0.0) {
+        vec3 R = reflect(-Light, normal);
+        vec3 viewPoint = normalize(-vertexPos);
+        float specAngle = max(dot(R, viewPoint), 0.0);
+        specular = pow(specAngle, shininess);
+    }
+
+    gl_FragColor = vec4(AmbientLight * AmbientModel +
+                      DiffuseLight * LightPoint * DiffuseModel +
+                      SpecularLight * specular * SpecularModel, 1.0);
+
+
 }`;
